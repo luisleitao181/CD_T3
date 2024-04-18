@@ -6,7 +6,7 @@
 #include <termios.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define BAUDRATE B9600
+#define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 {
     int fd,c, res,state=0;
     struct termios oldtio,newtio;
-    unsigned char buf[5];
+    unsigned char buf[5], UABUF[10];
 
     if ( (argc < 2) ||
          ((strcmp("/dev/ttyS0", argv[1])!=0) &&
@@ -71,69 +71,88 @@ int main(int argc, char** argv)
     /////
     
     //while (STOP==FALSE) {       
-        res = read(fd,buf,5);
         
-        /*for(int i=0;i<5;i++){
-            printf(":%02x:\n", buf[i]);
-        }
-        if (buf[0]=='z') STOP=TRUE;*/
+        /*while(read(fd,buf,1)){
+            printf(":%02x:\n", buf[0]);*/
+        
+        //if (buf[0]=='z') STOP=TRUE;
         ////
-        if(buf!=NULL){
-            printf("message recieved\n");
-            for(int i=0;i<5;i++){
+
                 switch(state){
                     case 0:
-                        if(buf[i]==0x5c){
+                        if(buf[0]==0x5c){
                             printf("flag RCV\n");
                             state=1;
+                        }
+                        else{
+                        state=0;
                         }   
                         break;
                     case 1:
-                        if(buf[i]==0x03){
+                        if(buf[0]==0x01){
                             printf("A RCV\n");
                             state=2;
                         }
-                        if(buf[i]==0x5c){
+                        else if(buf[0]==0x5c){
                             printf("flag RCV (went back)\n");
                             state=1;
-                        }  
+                        }
+                        else{
+                        state=0;
+                        } 
                         break;
                     case 2:
-                        if(buf[i]==0x01){
+                        if(buf[0]==0x07){
                             printf("C RCV\n");
                             state=3;
                         }
-                        if(buf[i]==0x5c){
+                        else if(buf[0]==0x5c){
                             printf("flag RCV (went back)\n");
                             state=1;
-                        }  
+                        }
+                        else{
+                        state=0;
+                        } 
                         break;
                     case 3:
-                    if(buf[i]==0x08){
+                    if(buf[0]==0x06){
                             printf("BCC RCV\n");
                             state=4;
                         }
-                        if(buf[i]==0x5c){
+                        else if(buf[0]==0x5c){
                             printf("flag RCV (went back)\n");
                             state=1;
+                        }
+                        else{
+                        state=0;
                         }  
                         break;
                     case 4:
-                        if(buf[i]==0x5c){
+                        if(buf[0]==0x5c){
                             printf("last flag for SET RCV\n");
                             state=5;
+                           
                         }
+                        else{
+                        state=0;
+                        }
+                        
                         break;
-                }    
-        }
-        ////
-        
-    }
-    //////
+                }   
     if(state==5){
-        printf("attempting to send UA\n");
+    state=0; 
+    break;
     }
-    /////
+    }
+    printf("attempting to send UA\n");
+                     UABUF[0]=0x5c;
+                     UABUF[1]=0x03;
+                     UABUF[2]=0x06;
+                     UABUF[3]=0x05;
+                     UABUF[4]=0x5c;
+                  res=0; res=write(fd,UABUF,strlen(UABUF));
+    
+    
 
     /*
     O ciclo WHILE deve ser alterado de modo a respeitar o indicado no guião
