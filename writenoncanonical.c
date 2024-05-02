@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 {
     int fd,c, res,state=0,saiwhile=0;
     struct termios oldtio,newtio;
-    unsigned char buf[7],rcvbuf[10];
+    unsigned char buf[10],rcvbuf[10];
     int i, sum = 0, speed = 0;
 
     if ( (argc < 2) ||
@@ -151,12 +151,29 @@ int main(int argc, char** argv)
     state=0;
     break;
 }
-    
+
     }
     /*
     O ciclo FOR e as instruções seguintes devem ser alterados de modo a respeitar
     o indicado no guião
     */
+///////////////////////
+////llwrite
+///////////////////////
+    buf[0]=0x5c;
+    buf[1]=0x01;
+    buf[2]=0x07;
+    buf[3]=0x06;
+    buf[4]='o';
+    buf[5]='l';
+    buf[6]='a';
+    buf[7]=0x5c;
+res = write(fd,buf,strlen(buf));
+///////////////////////
+
+
+
+
 
 
     if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
