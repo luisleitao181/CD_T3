@@ -66,17 +66,9 @@ int main(int argc, char** argv)
     }
 
     printf("New termios structure set\n");
-    /////
-    //res = read(fd,buf,5);
-    /////
-    
-    //while (STOP==FALSE) {       
-        
-        /*while(read(fd,buf,1)){
-            printf(":%02x:\n", buf[0]);*/
-        
-        //if (buf[0]=='z') STOP=TRUE;
-        ////
+   
+        while(read(fd,buf,1)){
+            //printf(":%02x:\n", buf[0]);
 
                 switch(state){
                     case 0:
@@ -144,7 +136,7 @@ int main(int argc, char** argv)
     break;
     }
     }
-    printf("attempting to send UA\n");
+    printf("attempting to send UA\n\n\n");
                      UABUF[0]=0x5c;
                      UABUF[1]=0x03;
                      UABUF[2]=0x06;
@@ -157,7 +149,93 @@ int main(int argc, char** argv)
     /*
     O ciclo WHILE deve ser alterado de modo a respeitar o indicado no guião
     */
+    //////////////////////
+    ////llread
+    //////////////////////
+    int readstate=0,n=0;
+    unsigned char readbuffer[50], message[50];
+    unsigned char bcc;
+    while(read(fd,readbuffer,1)){
+            //printf(":%02x:\n", readbuffer[0]);
 
+                switch(readstate){
+                    case 0:
+                        if(readbuffer[0]==0x5c){
+                            readstate=1;
+                        }
+                        else{
+                        readstate=0;
+                        }   
+                        break;
+                        
+                    case 1:
+                        if(readbuffer[0]==0x01){
+                            readstate=2;
+                        }
+                        else if(readbuffer[0]==0x5c){
+                            readstate=1;
+                        }
+                        else{
+                        readstate=0;
+                        } 
+                        break;
+                        
+                    case 2:
+                        if(readbuffer[0]==0x07){
+                            readstate=3;
+                        }
+                        else if(readbuffer[0]==0x5c){
+                            readstate=1;
+                        }
+                        else{
+                        readstate=0;
+                        } 
+                        break;
+                        
+                    case 3:
+                        if(readbuffer[0]==0x06){
+                            readstate=4;
+                        }
+                        else if(readbuffer[0]==0x5c){
+                            
+                            readstate=1;
+                        }
+                        else{
+                        readstate=0;
+                        }  
+                        break;
+                   case 4:///guardar Ds e esperar pelo bcc2
+                        for(int i=0; i<n ;i++){///esta a dar erro so da a ultima character
+                            bcc=bcc^message[i];
+                        }
+                        if(readbuffer[0]==bcc){
+                            readstate=5;
+                            printf("message ended\n");
+                        }
+                        else{
+                            message[n]=readbuffer[0];
+                            n++;
+                            printf("%c\n", readbuffer[0]);
+                        }
+                        break;
+                   case 5://esperar pela flag
+                        if(readbuffer[0]==0x5c){
+                            readstate=6;
+                        }
+                        break;
+                }   
+                
+                
+                
+    if(state==6){
+    state=0; 
+    break;
+    }
+    }
+    /// if size of mesage>0 send buffer "mesage" and return
+    
+    
+    //////////////////////
     tcsetattr(fd,TCSANOW,&oldtio);
     close(fd);
     return 0;
