@@ -6,13 +6,12 @@ typedef enum{
 } Role;
 typedef struct{
     char SerialPort[100];
-    Role r;
-    int baudrate;
+    Role role;
 } linklayer;
 
 
 int llopen(linklayer parameters);
-int llwrite(linklayer parameters);
+int llwrite(unsigned char *buf);
 int llread(linklayer parameters);
 int llclose(linklayer parameters);
 
