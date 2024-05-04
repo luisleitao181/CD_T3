@@ -1,3 +1,4 @@
+#include "llfunctions.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -26,68 +27,43 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-
-    /*
-    Open serial port device for reading and writing and not as controlling tty
-    because we don't want to get killed if linenoise sends CTRL-C.
-    */
+    const char *serialPort = argv[1];
+    const char *role = argv[2];
+    const char *filename = argv[3];
 
 
-    fd = open(argv[1], O_RDWR | O_NOCTTY );
-    if (fd < 0) { perror(argv[1]); exit(-1); }
+    
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    Role role;
 
-    if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
-        perror("tcgetattr");
-        exit(-1);
-    }
+  if(!strcmp("t",role))
+  {
+    role = transmitter;                    //nao sei se isto e assim
+    //printf("Role: TRANSMITER\n");
+  }
+  else if(!strcmp("r",role))
+  {
+    role = reciever;
+    //printf("Role: RECEIVER\n");
+  }
+  LinkLayer params;
+  params.role = role;
+  strcpy(params.serialPort,serialPort);
 
-    bzero(&newtio, sizeof(newtio));
-    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-    newtio.c_iflag = IGNPAR;
-    newtio.c_oflag = 0;
-
-    /* set input mode (non-canonical, no echo,...) */
-    newtio.c_lflag = 0;
-
-    newtio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-    newtio.c_cc[VMIN]     = 5;   /* blocking read until 5 chars received */
-
-
-
-    /*
-    VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a
-    leitura do(s) próximo(s) caracter(es)
-    */
+  int fdsize=llopen(params)
+  if(fd<0)exit(-1);
 
 
-    tcflush(fd, TCIOFLUSH);
 
-    if (tcsetattr(fd,TCSANOW,&newtio) == -1) {
-        perror("tcsetattr");
-        exit(-1);
-    }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    printf("New termios structure set\n");
+  if(role == transmitter)
+  {
+  }
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  else if(role == reciever)
+  {
+  }
 
-
-    if(llopen(0)==-1){
-        perror("tcsetattr");
-        exit(-1);
-    }
-
-    }
-    /*
-    O ciclo FOR e as instruções seguintes devem ser alterados de modo a respeitar
-    o indicado no guião
-    */
-
-
-    if ( tcsetattr(fd,TCSANOW,&oldtio) == -1) {
-        perror("tcsetattr");
-        exit(-1);
-    }
-
-
-    close(fd);
-    return 0;
+  return 0;
 }
