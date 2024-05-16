@@ -8,13 +8,14 @@
 #include <termios.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define BAUDRATE B38400
+//#define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
 int fd;
-linklayer connectionParameters;
+struct termios oldtio, newtio;
+linkLayer connectionParameters;
 
 #define SET 0x07 
 #define UA 0x06
@@ -24,13 +25,13 @@ linklayer connectionParameters;
 #define A_Rx 0x03 
 
 
-int llopen(linklayer linklayer)
+int llopen(linkLayer linklayer)
 {
     strcpy(connectionParameters.serialPort, linklayer.serialPort);
     connectionParameters.role = linklayer.role;
     connectionParameters.baudRate = linklayer.baudRate;
     connectionParameters.nRetransmissions = linklayer.nRetransmissions;
-    connectionParameters.timeout = linklayer.timeout;
+    connectionParameters.timeOut = linklayer.timeOut;
 
     char* serialPort = connectionParameters.serialPort;
 
@@ -52,7 +53,7 @@ int llopen(linklayer linklayer)
     memset(&newtio, 0, sizeof(newtio));
 
     // populate new port settings
-    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+    newtio.c_cflag = 9600 | CS8 | CLOCAL | CREAD;
     newtio.c_iflag = IGNPAR;
     newtio.c_oflag = 0;
 
@@ -69,13 +70,13 @@ int llopen(linklayer linklayer)
 
     //printf("New termios structure set\n");
 
-    unsigned char buf[Max_Size];
+    unsigned char buf[Max_Size], rcvbuf[Max_Size];
     unsigned char UABUF[Max_Size];
 
 
-    enum OpenStates state = OPEN_START;
-
-    if(connectionParameters.role==transmitter){
+    //enum OpenStates state = OPEN_START;
+    int state=0;
+    if(connectionParameters.role==TRANSMITTER){
     buf[0]=FLAG;
     // buf[1]=0x38;///random (to test state machine)
     // buf[2]=0x5c;
@@ -87,11 +88,11 @@ int llopen(linklayer linklayer)
     // for(int i=0;i<(strlen(buf)-1);i++){
     //     printf("%02x\n",buf[i]);
     // }
-    res = write(fd,buf,strlen(buf));
+    int res = write(fd,buf,strlen(buf));
     printf("%d bytes written\n\n\n", res);
 
     while(read(fd,rcvbuf,1)){
-        // printf("%02x\n",rcvbuf[0]);
+        printf("%02x\n",rcvbuf[0]);
         switch(state){
                     case 0:
                         if(rcvbuf[0]==FLAG){
@@ -156,9 +157,9 @@ int llopen(linklayer linklayer)
             break;
     }
     }
-    if(connectionParameters.role==receiver){
+    if(connectionParameters.role==RECEIVER){
         while(read(fd,buf,1)){
-            //printf(":%02x:\n", buf[0]);
+            printf(":%02x:\n", buf[0]);
                 switch(state){
                     case 0:
                         if(buf[0]==FLAG){
@@ -240,19 +241,19 @@ int llopen(linklayer linklayer)
 int llclose(linkLayer connectionParameters, int showStatistics)
 {
     int state=0;
-    unsigned char buf[Max_Size];
+    unsigned char buf[Max_Size], rcvbuf[Max_Size];
     unsigned char DISCBUF[Max_Size];
     unsigned char UABUF[Max_Size];
 
 
-    if(connectionParameters.role==transmitter){                                                   
+    if(connectionParameters.role==TRANSMITTER){                                                   
     buf[0]=FLAG;
     buf[1]=A_Tx;
     buf[2]=DISC;
     buf[3]=A_Tx ^ DISC;
     buf[4]=FLAG;
 
-    res = write(fd,buf,strlen(buf));
+    int res = write(fd,buf,strlen(buf));
     printf("%d bytes written\n\n\n", res);
 
     while(read(fd,rcvbuf,1)){
@@ -331,7 +332,7 @@ int llclose(linkLayer connectionParameters, int showStatistics)
 
     }
     /////
-    if(connectionParameters.role==reciever){
+    if(connectionParameters.role==RECEIVER){
         while(read(fd,buf,1)){
             printf(":%02x:\n", buf[0]);
             switch(state){
@@ -404,7 +405,7 @@ int llclose(linkLayer connectionParameters, int showStatistics)
         DISCBUF[2]=DISC;
         DISCBUF[3]=A_Rx ^ DISC;
         DISCBUF[4]=FLAG;
-        res=0; res=write(fd,DISCBUF,strlen(DISCBUF));
+        int res=0; res=write(fd,DISCBUF,strlen(DISCBUF));
         
         while(read(fd,buf,1)){
             switch (state)
@@ -562,8 +563,8 @@ int llread(char* packet)
                         }
                         break;
                 }   
-    if(state==6){
-    state=0; 
+    if(readstate==6){
+    readstate=0; 
     break;
     }
     }
@@ -573,7 +574,7 @@ int llread(char* packet)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int llwrite(char* buf, int bufSize)
 {
-    /////so teste
+   /////so teste
     buf[0]=FLAG;
     buf[1]=A_Tx;
     buf[2]=SET;
@@ -582,6 +583,6 @@ int llwrite(char* buf, int bufSize)
     buf[5]='l';
     buf[6]='a';
     buf[7]=FLAG;
-    res = write(fd,buf,strlen(buf));
+    int res = write(fd,buf,strlen(buf));
     ////////
 }
