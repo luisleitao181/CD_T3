@@ -1,22 +1,10 @@
-#ifndef LINKLAYER
-#define LINKLAYER
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <termios.h>
-#include <stdio.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-
 typedef struct linkLayer{
     char serialPort[50];
     int role; //defines the role of the program: 0==Transmitter, 1=Receiver
     int baudRate;
     int numTries;
     int timeOut;
+    int nRetransmissions;
 } linkLayer;
 
 //ROLE
