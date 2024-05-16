@@ -1,4 +1,5 @@
 #include "linklayer.h"
+#include "linklayer.c"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -31,7 +32,7 @@ int main(int argc, char *argv[])
         // open connection
         struct linkLayer ll;
         sprintf(ll.serialPort, "%s", argv[1]);
-        ll.role = transmitter;
+        ll.role = TRANSMITTER;
         ll.baudRate = 9600;
         ll.numTries = 3;
         ll.timeOut = 3;
@@ -103,7 +104,7 @@ int main(int argc, char *argv[])
 
         struct linkLayer ll;
         sprintf(ll.serialPort, "%s", argv[1]);
-        ll.role = reciever;
+        ll.role = RECEIVER;
         ll.baudRate = 9600;
         ll.numTries = 3;
         ll.timeOut = 3;
