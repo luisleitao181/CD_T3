@@ -68,6 +68,7 @@ int llopen(linkLayer linklayer)
 
     //enum OpenStates state = OPEN_START;
     int state=0;
+    int res=0;
     if(connectionParameters.role==TRANSMITTER){
         buf[0]=FLAG;
         buf[1]=A_Tx;
@@ -76,7 +77,7 @@ int llopen(linkLayer linklayer)
         buf[4]=FLAG;
 
 
-        int res = write(fd,buf,strlen(buf));
+        res = write(fd,buf,strlen(buf));
         if(res<0){
             return -1;
         }
@@ -555,7 +556,7 @@ int llread(char* packet)
                 break;
             case 4:///BCC1  e receber dados
 
-                if (readbuffer[0] ==0x7C && && message[messagecount-1]== ESCAPE_OCTET){
+                if (readbuffer[0] ==0x7C && message[messagecount-1]== ESCAPE_OCTET){
                     message[messagecount-1]== FLAG;
                 } 
                 else if(readbuffer[0] ==0x7D && message[messagecount-1]== ESCAPE_OCTET){
@@ -568,7 +569,7 @@ int llread(char* packet)
 
                 bcc2=0x00;
                 if(strlen(message)<2)break;
-                for(int i=0; i<n ;i++){                                                       ///esta a dar erro so da a ultima character
+                for(int i=0; i<messagecount ;i++){                                                       ///esta a dar erro so da a ultima character
                     bcc2=bcc2^message[i];
                 }
                 if(readbuffer[0]==bcc2){
@@ -624,14 +625,14 @@ int llread(char* packet)
     if(rej==1){
         return -1;
     }
-    return out_len;
+    return messagecount;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int llwrite(char* buf, int bufSize)
 {
-    if(bufsize<=0){
+    if(bufSize<=0){
         return -1;
     }
     int frame_to_send = 0,state=0;
@@ -646,7 +647,7 @@ int llwrite(char* buf, int bufSize)
     outbuf[out_len++]=CONTROLFIELD_S(frame_to_send);
     outbuf[out_len++]=A_Rx ^ CONTROLFIELD_S(frame_to_send);
 
-    for (size_t i = 0; i < bufsize; i++) {/////////stuffing
+    for (int i = 0; i < bufSize; i++) {/////////stuffing
         bcc2 ^= buf[i];
         if (buf[i] == FLAG) {
             outbuf[out_len++] = ESCAPE_OCTET;
