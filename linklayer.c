@@ -10,42 +10,11 @@
 #include <stdlib.h>
 
 
-//#define BAUDRATE B38400
-#define MODEMDEVICE "/dev/ttyS1"
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
-#define FALSE 0
-#define TRUE 1
+
 int fd;
 struct termios oldtio, newtio;
 linkLayer connectionParameters;
 linkLayer connectionParametersllclose;
-
-#define SET 0x07 
-#define UA 0x06
-#define DISC 0x0A
-#define FLAG 0x5C
-#define A_Tx 0x01 
-#define A_Rx 0x03 
-
-#define RR(n) (0x01 | (n<<4)) //000n0001
-#define REJ(n) (0x05 | (n<<4))//000n0101
-#define CONTROLFIELD_S(n) (0x08 | n<<6)////1n000000
-
-#define ESCAPE_OCTET 0x5D
-#define XOR_OCTET 0x20
-
-
-
-// //alarm temos que testar que nao faco a menor ideia se tenho isto do alarm minimamente correta
-// ///////
-// int alarmEnabled = FALSE;
-// int alarmCount = 0;
-
-// void alarmHandler(int signal)
-// {
-//     alarmEnabled = FALSE;
-//     alarmCount++;
-// }
 
 
 
@@ -108,6 +77,9 @@ int llopen(linkLayer linklayer)
 
 
         int res = write(fd,buf,strlen(buf));
+        if(res<0){
+            return -1;
+        }
         sleep(1);
         printf("%d bytes written\n\n\n", res);
 
@@ -117,7 +89,7 @@ int llopen(linkLayer linklayer)
             switch(state){
                 case 0:
                     if(rcvbuf[0]==FLAG){
-                        printf("flag RCV\n");
+                        //printf("flag RCV\n");
                     state=1;
                     }
                     else{
@@ -126,11 +98,11 @@ int llopen(linkLayer linklayer)
                     break;
                 case 1:
                     if(rcvbuf[0]==A_Rx){
-                        printf("A RCV\n");
+                        //printf("A RCV\n");
                         state=2;
                     }
                     else if(rcvbuf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     }
                     else{
@@ -139,11 +111,11 @@ int llopen(linkLayer linklayer)
                     break;
                 case 2:
                     if(rcvbuf[0]==SET){
-                        printf("C RCV\n");
+                        //printf("C RCV\n");
                         state=3;
                     }
                     else if(rcvbuf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     } 
                     else{
@@ -152,11 +124,11 @@ int llopen(linkLayer linklayer)
                     break;
                 case 3:
                     if(rcvbuf[0]==A_Rx ^ SET){
-                        printf("BCC RCV\n");
+                        //printf("BCC RCV\n");
                         state=4;
                     }
                     else if(rcvbuf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     }
                     else{
@@ -165,7 +137,7 @@ int llopen(linkLayer linklayer)
                     break;
                 case 4:
                     if(rcvbuf[0]==FLAG){
-                        printf("UA RCV\n");
+                        //printf("UA RCV\n");
                         state=5;
                     }
                     else{
@@ -183,7 +155,7 @@ int llopen(linkLayer linklayer)
             switch(state){
                 case 0:
                     if(buf[0]==FLAG){
-                        printf("flag RCV\n");
+                        //printf("flag RCV\n");
                         state=1;
                     }
                     else{
@@ -192,11 +164,11 @@ int llopen(linkLayer linklayer)
                     break;
                 case 1:
                     if(buf[0]==A_Tx){
-                        printf("A RCV\n");
+                        //printf("A RCV\n");
                         state=2;
                     }
                     else if(buf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     }
                     else{
@@ -205,11 +177,11 @@ int llopen(linkLayer linklayer)
                     break;
                 case 2:
                     if(buf[0]==SET){
-                        printf("C RCV\n");
+                        //printf("C RCV\n");
                         state=3;
                     }
                     else if(buf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     }
                     else{
@@ -218,11 +190,11 @@ int llopen(linkLayer linklayer)
                     break;
                 case 3:
                     if(buf[0]==A_Tx ^ SET){
-                        printf("BCC RCV\n");
+                        //printf("BCC RCV\n");
                         state=4;
                     }
                     else if(buf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     }
                     else{
@@ -231,7 +203,7 @@ int llopen(linkLayer linklayer)
                     break;
                 case 4:
                     if(buf[0]==FLAG){
-                        printf("last flag for SET RCV\n");
+                        //printf("last flag for SET RCV\n");
                         state=5;                           
                     }
                     else{
@@ -248,9 +220,12 @@ int llopen(linkLayer linklayer)
         UABUF[4]=FLAG;
         res=0;
         res=write(fd,UABUF,strlen(UABUF));
+        if(res<0){
+            return -1;
+        }
         sleep(1);
     }
-    return 0;
+    return 1;
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int llclose(linkLayer linklayer, int showStatistics)
@@ -262,8 +237,6 @@ int llclose(linkLayer linklayer, int showStatistics)
 
     connectionParametersllclose.role = linklayer.role;
 
-
-
     if(connectionParametersllclose.role==TRANSMITTER){                                                   
         buf[0]=FLAG;
         buf[1]=A_Tx;
@@ -272,6 +245,9 @@ int llclose(linkLayer linklayer, int showStatistics)
         buf[4]=FLAG;
 
         int res = write(fd,buf,strlen(buf));
+        if(res<0){
+            return -1;
+        }
         sleep(1);
 
         printf("%d bytes written\n\n\n", res);
@@ -282,7 +258,7 @@ int llclose(linkLayer linklayer, int showStatistics)
             switch(state){
                     case 0:
                         if(rcvbuf[0]==FLAG){              
-                            printf("flag RCV\n");
+                            //printf("flag RCV\n");
                             state=1;
                         }
                         else{
@@ -291,11 +267,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                         break;
                     case 1:
                         if(rcvbuf[0]==A_Rx){
-                            printf("A RCV\n");
+                            //printf("A RCV\n");
                             state=2;
                         }
                         else if(rcvbuf[0]==FLAG){
-                            printf("flag RCV (went back)\n");
+                            //printf("flag RCV (went back)\n");
                             state=1;
                         }
                         else{
@@ -304,11 +280,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                         break;
                     case 2:
                         if(rcvbuf[0]==DISC){
-                            printf("C RCV\n");
+                            //printf("C RCV\n");
                             state=3;
                         }
                         else if(rcvbuf[0]==FLAG){
-                            printf("flag RCV (went back)\n");
+                            //printf("flag RCV (went back)\n");
                             state=1;
                         } 
                         else{
@@ -317,11 +293,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                         break;
                     case 3:
                         if(rcvbuf[0]==A_Rx ^ DISC){
-                            printf("BCC RCV\n");
+                            //printf("BCC RCV\n");
                             state=4;
                         }
                         else if(rcvbuf[0]==FLAG){
-                            printf("flag RCV (went back)\n");
+                            //printf("flag RCV (went back)\n");
                             state=1;
                         }
                         else{
@@ -330,7 +306,7 @@ int llclose(linkLayer linklayer, int showStatistics)
                         break;
                     case 4:
                         if(rcvbuf[0]==FLAG){
-                            printf("DISC RCV\n");
+                            //printf("DISC RCV\n");
                             state=5;
                         }
                         else{
@@ -348,6 +324,9 @@ int llclose(linkLayer linklayer, int showStatistics)
         UABUF[4]=FLAG;
         res=0; 
         res=write(fd,UABUF,strlen(UABUF));
+        if(res<0){
+            return -1;
+        }
         sleep(1);
     }
     /////
@@ -359,7 +338,7 @@ int llclose(linkLayer linklayer, int showStatistics)
             switch(state){
                 case 0:
                     if(buf[0]==FLAG){
-                        printf("flag RCV\n");
+                        //printf("flag RCV\n");
                         state=1;
                     }
                     else{
@@ -368,11 +347,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                     break;
                 case 1:
                     if(buf[0]==A_Tx){
-                        printf("A RCV\n");
+                        //printf("A RCV\n");
                         state=2;
                         }
                         else if(buf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     }
                     else{
@@ -381,11 +360,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                     break;
                 case 2:
                     if(buf[0]==DISC){
-                        printf("C RCV\n");
+                        //printf("C RCV\n");
                         state=3;
                     }
                     else if(buf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     }
                     else{
@@ -394,11 +373,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                     break;
                 case 3:
                     if(buf[0]==A_Tx ^ DISC){
-                        printf("BCC RCV\n");
+                        //printf("BCC RCV\n");
                         state=4;
                     }
                     else if(buf[0]==FLAG){
-                        printf("flag RCV (went back)\n");
+                        //printf("flag RCV (went back)\n");
                         state=1;
                     }
                     else{
@@ -407,7 +386,7 @@ int llclose(linkLayer linklayer, int showStatistics)
                     break;
                 case 4:
                     if(buf[0]==FLAG){
-                        printf("last flag for DISC RCV\n");
+                        //printf("last flag for DISC RCV\n");
                         state=5;                       
                     }
                     else{
@@ -426,6 +405,9 @@ int llclose(linkLayer linklayer, int showStatistics)
         DISCBUF[4]=FLAG;
         int res=0; 
         res=write(fd,DISCBUF,strlen(DISCBUF));
+        if(res<0){
+            return -1;
+        }
         sleep(1);
         
         while(state!=5){
@@ -434,7 +416,7 @@ int llclose(linkLayer linklayer, int showStatistics)
                     {
                     case 0:
                         if(buf[0]==FLAG){
-                            printf("flag RCV\n");
+                            //printf("flag RCV\n");
                             state=1;
                         }
                         else{
@@ -443,11 +425,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                         break;
                     case 1:
                         if(buf[0]==A_Tx){
-                            printf("A RCV\n");
+                            //printf("A RCV\n");
                             state=2;
                         }
                         else if(buf[0]==FLAG){
-                            printf("flag RCV (went back)\n");
+                            //printf("flag RCV (went back)\n");
                             state=1;
                         }
                         else{
@@ -456,11 +438,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                         break;
                     case 2:
                         if(buf[0]==UA){
-                            printf("C RCV\n");
+                            //printf("C RCV\n");
                             state=3;
                         }
                         else if(buf[0]==FLAG){
-                            printf("flag RCV (went back)\n");
+                            //printf("flag RCV (went back)\n");
                             state=1;
                         }
                         else{
@@ -469,11 +451,11 @@ int llclose(linkLayer linklayer, int showStatistics)
                         break;
                     case 3:
                         if(buf[0]==A_Tx ^ UA){
-                            printf("BCC RCV\n");
+                            //printf("BCC RCV\n");
                             state=4;
                         }
                         else if(buf[0]==FLAG){
-                            printf("flag RCV (went back)\n");
+                            //printf("flag RCV (went back)\n");
                             state=1;
                         }
                         else{
@@ -482,8 +464,8 @@ int llclose(linkLayer linklayer, int showStatistics)
                         break;
                     case 4:
                         if(buf[0]==FLAG){
-                        printf("last flag for DISC RCV\n");
-                        state=5;                       
+                            //printf("last flag for DISC RCV\n");
+                            state=5;                       
                         }
                         else{
                         state=0;
@@ -516,7 +498,7 @@ int llread(char* packet)
 
     unsigned char message[Max_Size];
     unsigned char bcc2 = 0x00;
-
+    int messagecount=0;
 
     unsigned char C0 = CONTROLFIELD_S(0);              
     unsigned char C1 = CONTROLFIELD_S(1);
@@ -572,16 +554,25 @@ int llread(char* packet)
                 }  
                 break;
             case 4:///BCC1  e receber dados
+
+                if (readbuffer[0] ==0x7C && && message[messagecount-1]== ESCAPE_OCTET){
+                    message[messagecount-1]== FLAG;
+                } 
+                else if(readbuffer[0] ==0x7D && message[messagecount-1]== ESCAPE_OCTET){
+                    
+                }
+                else{
+                    message[messagecount] = readbuffer[0];
+                    messagecount++;
+                }
+
                 bcc2=0x00;
+                if(strlen(message)<2)break;
                 for(int i=0; i<n ;i++){                                                       ///esta a dar erro so da a ultima character
                     bcc2=bcc2^message[i];
                 }
                 if(readbuffer[0]==bcc2){
                     readstate=5;
-                }
-                else{
-                    message[n]=readbuffer[0];
-                    n++;
                 }
                 break;
             case 5://BCC2
@@ -600,34 +591,17 @@ int llread(char* packet)
      
     }
 
-    unsigned char output[strlen(message)*2];
-    int out_len=0;
-    for (int j = 0; j < strlen(message); j++) {
-        if (message[j] == ESCAPE_OCTET) {
-            if (j + 1 < strlen(message) && (message[j + 1] == (0x7C ^ XOR_OCTET))) {
-                out[out_len++] = FLAG;
-                j++; 
-            } else if (j + 1 < strlen(message) && (message[j + 1] == (0x7D ^ XOR_OCTET))) {
-                out[out_len++] = ESCAPE_OCTET;
-                j++;  
-            } else {
-                out[out_len++] = message[j];
-            }
-        } else {
-            out[out_len++] = message[j];
-        }
-    }
-    strcpy(packet, output);
-
+    strcpy(packet, message);
 
 
 
     messagebuffer[0] = FLAG;
     messagebuffer[1] = A_Rx;
-               
+    int rej=0;         
     if(controlbuffer[0]==0x80){         ///C0     ////RR ou REJ(0 ou 1 se controlbuffer[0] for 0 ou 1)
         if(readstate==7){
             messagebuffer[2] = REJ(1); 
+            rej=1; 
         }
         else{
             messagebuffer[2] = RR(1); 
@@ -636,6 +610,7 @@ int llread(char* packet)
     else if(controlbuffer[0]==0xC0){     ///C1
         if(readstate==7){
             messagebuffer[2] = REJ(0); 
+            rej=1; 
         }
         else{
             messagebuffer[2] = RR(0); 
@@ -646,7 +621,9 @@ int llread(char* packet)
        
     write(fd,messagebuffer,strlen(messagebuffer));
     sleep(1);
-
+    if(rej==1){
+        return -1;
+    }
     return out_len;
 }
 
@@ -654,7 +631,10 @@ int llread(char* packet)
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int llwrite(char* buf, int bufSize)
 {
-   int frame_to_send = 0,state=0;
+    if(bufsize<=0){
+        return -1;
+    }
+    int frame_to_send = 0,state=0;
     unsigned char bcc2;
     unsigned char rcvbuf[Max_Size],controlframe[1];
 
@@ -739,8 +719,11 @@ int llwrite(char* buf, int bufSize)
                 break;
         }
     }
-
-    /////////faltava a cena das retransmissions
+    if(controlframe[0]==REJ){
+        return -1;
+    }
     
-    return 1;
+    /////////faltava a cena das retransmissions para poder ter isto de REJ e RR a funcionar pq so envia uma vez tudo
+    
+    return out_len;
 }
