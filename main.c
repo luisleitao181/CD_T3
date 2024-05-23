@@ -151,9 +151,6 @@ int main(int argc, char *argv[])
                 }
             }
         }
-
-        unsigned char buf[Max_Size];
-        llread(buf);
         llclose(ll,1);
         close(file_desc);
         return 0;
